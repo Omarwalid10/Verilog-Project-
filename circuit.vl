@@ -1,0 +1,129 @@
+/*
+20210614
+20201126
+20201146
+20200480
+20200029
+*/
+
+
+//we make half adder to use it in implement the full adder
+module half_adder(sum, carry, a, b);
+   input a, b;
+   output sum, carry;
+   xor(sum, a, b);
+   and(carry, a, b);
+endmodule
+// this is full adder to take the 2 input we use to calculate them and the carry of the previous calculation
+module full_adder(output sum, output carry, input x, input y, input z);
+   wire s1, c1, c2;
+   half_adder adder1(s1, c1, x, y);
+   half_adder adder2(sum, c2, s1, z);
+   or(carry, c1, c2);
+endmodule
+ //this is multiplexer circuit 4*1 to make one choose from 4 options by the selection input
+module mux4_1(output outPut, input s0,input s1, input a1, input a2, input a3, input a4);
+wire in0,in1,in2,in3;
+      //00
+      and(in0, a1, ~s1, ~s0);
+      //01
+      and(in1, a2, ~s1, s0);
+      //10
+      and(in2, a3, s1, ~s0);
+      //11
+      and(in3, a4, s1, s0);
+      or(outPut, in0, in1, in2, in3);
+endmodule
+//this module is collect the all components in the circuit 
+//it has 6 mux 4*1
+//it has 3 full adder
+//it has 3 not
+//there are 12 component and logic 0 , logic 1
+module theCircuitComponents( g , s0,  s1,  a, b ,overflow);
+ input s0,s1; 
+ input [2:0]a,b;
+ output [2:0]g;
+ //this output to check the last carry is found or not 
+ output overflow;
+ wire logic1=1,logic0=0;
+ wire ma0,mb0,ma1,mb1,ma2,mb2,c0,c1,overflow;
+//this is the first 2 multiplexer and there output is the input of the first full adder
+ mux4_1 m1(ma0,s0,s1,a[0],a[0],a[0],logic0);
+ mux4_1 m2(mb0,s0,s1,logic1,b[0],~b[0],~b[0]);
+ full_adder f1(g[0],c0,s1,ma0,mb0);
+//this is the second 2 multiplexer and there output is the input of the second full adder
+ mux4_1 m3(ma1,s0,s1,a[1],a[1],a[1],logic0);
+ mux4_1 m4(mb1,s0,s1,logic1,b[1],~b[1],~b[1]);
+ full_adder f2(g[1],c1,c0,ma1,mb1);
+//this is the third 2 multiplexer and there output is the input of the third full adder
+ mux4_1 m5(ma2,s0,s1,a[2],a[2],a[2],logic0);
+ mux4_1 m6(mb2,s0,s1,logic1,b[2],~b[2],~b[2]);
+ full_adder f3(g[2],overflow,c1,ma2,mb2);
+ 
+endmodule
+//this is the test bench to check the test case of this circuit
+module test_bench_circuit;
+//capital
+    reg S0, S1,i,j,k;
+    reg [2:0]A, B; 
+    wire [2:0]G;
+    wire over;
+    initial begin
+       $monitor(" Time = %g  S1 = %b  S0 = %b  A = %b  B = %b    G --> %b    overFlow ( lastCarry ) --> %b",$time,S1,S0,A,B,G,over);  
+    end
+    theCircuitComponents circuit(.g(G),.s0(S0),.s1(S1),.a(A),.b(B),.overflow(over));
+    initial begin
+      //the test cases:-
+      //when s1=0 s0=0 the circuit make  G = A-1 10 test
+         S1=0; S0=0; A=000; B=000;
+      #5 S1=0; S0=0; A=000; B=111; 
+      #5 S1=0; S0=0; A=001; B=110; 
+      #5 S1=0; S0=0; A=001; B=010;
+      #5 S1=0; S0=0; A=010; B=110;
+      #5 S1=0; S0=0; A=011; B=111;
+      #5 S1=0; S0=0; A=100; B=111;
+      #5 S1=0; S0=0; A=101; B=111;
+      #5 S1=0; S0=0; A=110; B=111;
+      #5 S1=0; S0=0; A=111; B=111;
+      #5 $display("---------------------------------------------------------------------------------------------");
+      //when s1=0 s0=1 the circuit make G = A+B  10 test
+      #5 S1=0; S0=1; A=000; B=000;
+      #5 S1=0; S0=1; A=001; B=000; 
+      #5 S1=0; S0=1; A=001; B=001; 
+      #5 S1=0; S0=1; A=001; B=010;
+      #5 S1=0; S0=1; A=010; B=000;
+      #5 S1=0; S0=1; A=010; B=001;
+      #5 S1=0; S0=1; A=011; B=000;
+      //becaus signed
+      #5 S1=0; S0=1; A=010; B=010;//2+2 = -4
+      #5 S1=0; S0=1; A=011; B=001;//3+1 = -4
+      #5 S1=0; S0=1; A=011; B=010;//3+2 = -3
+      #5 $display("---------------------------------------------------------------------------------------------");
+      //when s1=1 s0=0 the circuit make G = A-B  13 test
+      #5 S1=1; S0=0; A=000; B=000;
+      #5 S1=1; S0=0; A=001; B=000; 
+      #5 S1=1; S0=0; A=001; B=001; 
+      #5 S1=1; S0=0; A=010; B=000;
+      #5 S1=1; S0=0; A=010; B=001;
+      #5 S1=1; S0=0; A=010; B=010;
+      #5 S1=1; S0=0; A=011; B=001;
+      #5 S1=1; S0=0; A=011; B=010;
+      #5 S1=1; S0=0; A=011; B=011;
+      //the negative result test case when A < B
+      #5 S1=1; S0=0; A=000; B=001;//0-1 = -1
+      #5 S1=1; S0=0; A=001; B=010;//1-2 = -1
+      #5 S1=1; S0=0; A=001; B=011;//1-3 = -2
+      #5 S1=1; S0=0; A=010; B=011;//2-3 = -1
+      #5$display("---------------------------------------------------------------------------------------------");
+      //when s1=1 s0=1 the circuit make G = -B  8 test 
+      #5 S1=1; S0=1; A=000; B=000;
+      #5 S1=1; S0=1; A=000; B=001; 
+      #5 S1=1; S0=1; A=111; B=001; 
+      #5 S1=1; S0=1; A=001; B=010;
+      #5 S1=1; S0=1; A=010; B=010;
+      #5 S1=1; S0=1; A=011; B=011;
+      #5 S1=1; S0=1; A=110; B=011;
+      #5 S1=1; S0=1; A=111; B=011;
+    end
+ 
+endmodule
